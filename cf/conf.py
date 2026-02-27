@@ -72,4 +72,5 @@ def getConfig( sect, opt, default=None ):
         return defconfig[sect][opt]
     return default
 
+
 loadConfig()

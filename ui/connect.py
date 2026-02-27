@@ -15,11 +15,15 @@ oracleParamsList = [
 #        [ "program", "machine", "terminal", "osuser" ]
         ]
 
+def titleString( string ):
+    return string.replace( '_', ' ' ).title()
+
 
 class readonlyEdit( QLineEdit ):
-    def __init__( self, text ):
-        super().__init__( text )
+    def __init__( self, dictInfo, name ):
+        super().__init__( )
         self.setReadOnly( True )
+        dictInfo[name] = self
 
 
 class connectDialog( childWin ):
@@ -28,46 +32,82 @@ class connectDialog( childWin ):
         super().__init__( mainWindow, "Connection Dialog" )
         self.config = config
 
-        grParams = QGroupBox( "Connection Params" )
-        lyParams = QFormLayout()
+        if True:
+            grParams = QGroupBox( "Connection Params" )
+            lyParams = QFormLayout()
 
-        #self.labelNotAllowed = QLabel( "<font color='red'><b>Can't modify tnsnames.ora connection parameters</b></font>" )
-        #lyParams.addWidget( self.labelNotAllowed )
+            #self.labelNotAllowed = QLabel( "<font color='red'><b>Can't modify tnsnames.ora connection parameters</b></font>" )
+            #lyParams.addWidget( self.labelNotAllowed )
 
-        self.editConnName = QLineEdit()
-        lyParams.addRow( '<b>Name</b>', self.editConnName )
-        self.addConnectWidgets( lyParams )
-        grParams.setLayout( lyParams )
-        self.layout().addWidget( grParams )
+            self.editConnName = QLineEdit()
+            lyParams.addRow( '<b>Name</b>', self.editConnName )
+            self.addConnectWidgets( lyParams )
+            grParams.setLayout( lyParams )
+            self.layout().addWidget( grParams )
 
-        lyTestConnect = QHBoxLayout()
+            lyTestConnect = QHBoxLayout()
 
-        btnDisconnect = QPushButton( "Disconnect current" )
-        btnDisconnect.clicked.connect( self.clickedDisconnect )
-        lyTestConnect.addWidget( btnDisconnect )
+            btnDisconnect = QPushButton( "Disconnect current" )
+            btnDisconnect.clicked.connect( self.clickedDisconnect )
+            lyTestConnect.addWidget( btnDisconnect )
 
-        lyTestConnect.addItem( QSpacerItem( 1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred ) )
+            lyTestConnect.addItem( QSpacerItem( 1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred ) )
 
-        btnTest = QPushButton( "Test connection" )
-        btnTest.clicked.connect( self.clickedTest )
-        lyTestConnect.addWidget( btnTest )
+            btnTest = QPushButton( "Test connection" )
+            btnTest.clicked.connect( self.clickedTest )
+            lyTestConnect.addWidget( btnTest )
 
-        self.btnSave = QPushButton( "Save" )
-        self.btnSave.clicked.connect( self.clickedSave )
-        lyTestConnect.addWidget( self.btnSave )
+            self.btnSave = QPushButton( "Save" )
+            self.btnSave.clicked.connect( self.clickedSave )
+            lyTestConnect.addWidget( self.btnSave )
 
-        btnConnect = QPushButton( "Connect" )
-        btnConnect.clicked.connect( self.clickedConnect )
-        lyTestConnect.addWidget( btnConnect )
+            btnConnect = QPushButton( "Connect" )
+            btnConnect.clicked.connect( self.clickedConnect )
+            lyTestConnect.addWidget( btnConnect )
 
-        self.layout().addLayout( lyTestConnect )
+            self.layout().addLayout( lyTestConnect )
 
-        # Current Connection Info
+        if True:
+            grInfo = QGroupBox( "Current Connection Info" )
+            lyInfo = QHBoxLayout( )
 
-        isDbOpen = ( mainWindow.data._oracle is not None )
-        isConfigCurrent = ( mainWindow.currentConfig == self.config )
-        if isDbOpen and isConfigCurrent:
-            with mainWindow.data._oracle.cursor() as cursor:
+            self.info = {}
+            infoEdits = [ "database", "unique_name", "inst_name", 
+                          "platform", "host_name", "version",
+                          "type", "role", "log_mode",
+                          "open_mode", "sessions", "processes",
+                          "created", "resetlogs", "startup" ]
+            infoLayouts = [ QFormLayout() for i in range(3) ]
+
+            for i,t in enumerate( infoEdits ):
+                infoLayouts[ i % 3 ].addRow( t.replace( '_', ' ').title(), readonlyEdit( self.info, t ) )
+
+            for i in range(3):
+                lyInfo.addLayout( infoLayouts[i] )
+
+            grInfo.setLayout( lyInfo )
+            self.layout().addWidget( grInfo )
+
+        if True:
+            grCache = QGroupBox( "Populate cache tables" )
+            lyCache = QHBoxLayout()
+
+            lyCache.addItem( QSpacerItem( 1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred ) )
+            for name in cache_tables.keys():
+                button = QPushButton( name )
+                button.clicked.connect( lambda checked=False, table=cache_tables[name]: self.populateCache(table) )
+                lyCache.addWidget( button )
+
+            grCache.setLayout( lyCache )
+            self.layout().addWidget( grCache )
+
+        self.refreshCurrentParams()
+        self.fillConnectionInfo()
+        
+
+    def fillConnectionInfo( self ):
+        if self.isConfigCurrent():
+            with self.mainWindow.data._oracle.cursor() as cursor:
                 database = cursor.execute( "select name, db_unique_name, database_role, platform_name, open_mode, log_mode, created, resetlogs_time from v$database" ).fetchone()
                 instance = cursor.execute( "select instance_number, instance_name, host_name, version_full, database_type, startup_time from v$instance" ).fetchone()
                 sessions = cursor.execute( "select count(*) from v$session" ).fetchone()[0]
@@ -81,59 +121,30 @@ class connectDialog( childWin ):
             processes = ''
             params = {}
 
-        grInfo = QGroupBox( "Current Connection Info" )
-        #grInfo.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Expanding )
-        lyInfo = QHBoxLayout( )
+        self.info["database"].setText( database[0] )
+        self.info["unique_name"].setText( database[1] )
+        self.info["inst_name"].setText( instance[1] )
+        self.info["platform"].setText( database[3] )
+        self.info["host_name"].setText( instance[2] )
+        self.info["version"].setText( instance[3] )
+        self.info["type"].setText( instance[4] )
+        self.info["role"].setText( database[2] )
+        self.info["log_mode"].setText( database[5] )
+        self.info["open_mode"].setText( database[4] )
+        self.info["sessions"].setText( f"{sessions}/{params.get('sessions','')}" )
+        self.info["processes"].setText( f"{processes}/{params.get('processes','')}" )
+        self.info["created"].setText( str(database[5]) )
+        self.info["resetlogs"].setText( str(database[7]) )
+        self.info["startup"].setText( str(database[5]) )
 
-        lyLeftInfo = QFormLayout()
-        lyMidInfo = QFormLayout()
-        lyRightInfo = QFormLayout()
 
-        lyLeftInfo.addRow( "Database", readonlyEdit( database[0] ) )
-        lyMidInfo.addRow( "Unique name", readonlyEdit( database[1] ) )
-        lyRightInfo.addRow( "Inst name", readonlyEdit( instance[1] ) )
-
-        lyLeftInfo.addRow( "Platform", readonlyEdit( database[3] ) )
-        lyMidInfo.addRow( "Host name", readonlyEdit( instance[2] ) )
-        lyRightInfo.addRow( "Version", readonlyEdit( instance[3] ) )
-
-        lyLeftInfo.addRow( "Type", readonlyEdit( instance[4] ) )
-        lyMidInfo.addRow( "Role", readonlyEdit( database[2] ) )
-        lyRightInfo.addRow( "Log mode", readonlyEdit( database[5] ) )
-
-        lyLeftInfo.addRow( "Open mode", readonlyEdit( database[4] ) )
-        lyMidInfo.addRow( "Sessions", readonlyEdit( f"{sessions}/{params.get('sessions','')}" ) )
-        lyRightInfo.addRow( "Processes", readonlyEdit( f"{processes}/{params.get('processes','')}" ) )
-
-        lyLeftInfo.addRow( "Created", readonlyEdit( str(database[6]) ) )
-        lyMidInfo.addRow( "Resetlogs", readonlyEdit( str(database[7]) ) )
-        lyRightInfo.addRow( "Startup", readonlyEdit( str(instance[5]) ) )
-
-        lyInfo.addLayout( lyLeftInfo )
-        lyInfo.addLayout( lyMidInfo )
-        lyInfo.addLayout( lyRightInfo )
-
-        grInfo.setLayout( lyInfo )
-        self.layout().addWidget( grInfo )
-
-        grCache = QGroupBox( "Populate cache tables" )
-        lyCache = QHBoxLayout()
-
-        lyCache.addItem( QSpacerItem( 1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred ) )
-        for name in cache_tables.keys():
-            button = QPushButton( name )
-            button.clicked.connect( lambda checked=False, table=cache_tables[name]: self.populateCache(table) )
-            lyCache.addWidget( button )
-
-        grCache.setLayout( lyCache )
-        self.layout().addWidget( grCache )
-
-        self.refreshCurrentParams()
+    def isConfigCurrent( self ):
+        return ( self.mainWindow.data._oracle is not None and self.mainWindow.currentConfig == self.config )
 
 
     def addConnectWidgets( self, layout ):
         def addParamWidget( layout, param ):
-            label = param.replace("_"," ").title()
+            label = param.replace( "_", " " ).title()
             if param == "mode":
                 widget = QComboBox()
                 widget.addItem( "Normal", "" )
@@ -149,6 +160,11 @@ class connectDialog( childWin ):
             layout.addRow( label, widget )
         #
         self.oracleParamsWidgets = []
+        oracleParamsList = [ "dsn",
+                             [ "user", "password", "mode" ],
+                             [ "protocol", "host", "port", "sdu" ],
+                             [ "service_name", "instance_name", "sid", "server_type" ] ]
+#                             [ "program", "machine", "terminal", "osuser" ]
         for param in oracleParamsList:
             if isinstance(param,list):
                 wH = QWidget()
@@ -161,8 +177,6 @@ class connectDialog( childWin ):
             else:
                 addParamWidget( layout, param )
 
-    #def getConfig( self ):
-    #    return dict( src="edit", name=str(self.editConnName.text()), params=self.getConnectParams() )
 
     def getConnectParams( self ):
         connectParams = {}
@@ -176,8 +190,11 @@ class connectDialog( childWin ):
                 connectParams[param] = value
         return connectParams.copy()
 
+
     def clickedDisconnect( self ):
         self.mainWindow.disconnectAll()
+        self.fillConnectionInfo()
+
 
     def clickedTest( self ):
         connectParams = dict( Config["Oracle_defaults"] ).copy()
@@ -190,6 +207,7 @@ class connectDialog( childWin ):
             QMessageBox.information( self, "Test Connection", "Test connection successful!", QMessageBox.Ok )
         except Exception as e:
             QMessageBox.critical( self, "Test Connection", f"Test connection failed:\n{str(e)}" )
+
 
     def clickedSave( self ):
         name = self.editConnName.text()
@@ -206,14 +224,18 @@ class connectDialog( childWin ):
         self.config = dict( src="saved", name=name, params=params )
         Config["SavedSessions"][name] = str( params )
         self.mainWindow.treeConnections.refreshSaved()
+        self.fillConnectionInfo()
+
 
     def clickedConnect( self ):
-        if self.config.get("params","") != self.getConnectParams():
-            print( self.config )
-            print( self.getConnectParams() )
-            self.config = dict( src="edit", name=str(self.editConnName.text()), params=self.getConnectParams() )
+        params = self.getConnectParams()
+        if params != self.config.get("params",""):
+            name = self.editConnName.text() or 'noname'
+            self.config = dict( src="edit", name=name, params=params )
             self.mainWindow.treeConnections.addRecent( self.config )
         self.mainWindow.connectTo( self.config )
+        self.fillConnectionInfo()
+
 
     def refreshCurrentParams( self ):
         if isinstance( self.config, dict ):
@@ -236,8 +258,9 @@ class connectDialog( childWin ):
             else:
                 widget.setText( text )
 
+
     def populateCache( self, table ):
-        if self.mainWindow.currentConfig['src'] is not None:
+        if self.isConfigCurrent():
             QApplication.setOverrideCursor( Qt.WaitCursor )
 #            try:
             try:
@@ -248,7 +271,4 @@ class connectDialog( childWin ):
 #                raise
             QMessageBox.information( self, "Cache population", f"Cache population for table {table} complete!", QMessageBox.Ok )
         else:
-            raise Exception( "Not connected!" )
-
-    #def sizeHint( self ):
-    #    return QSize( 800, 500 )
+            raise Exception( "Connection is not current!" )

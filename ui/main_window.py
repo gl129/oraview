@@ -25,8 +25,7 @@ class MainWindow( QMainWindow ):
         self.resize( 1200, 800 )
 
         #self.setWindowIcon( QIcon(ico_path) )
-
-        loadConfig()
+        #loadConfig()
 
         self.data = dataProvider( self )
         self.cache = dbcache( )

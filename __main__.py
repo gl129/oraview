@@ -5,6 +5,7 @@ import traceback
 import oracledb
 from PySide2.QtCore import QTimer
 from PySide2.QtWidgets import QApplication, QMessageBox
+
 from .ui.main_window import MainWindow
 
 
