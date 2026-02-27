@@ -7,9 +7,8 @@ defconfig = {
         "MainWindow": {
             "refreshInterval": "10"
             },
-        "Oracle": {
+        "Oracle_defaults": {
             "user": "oraview",
-            "password": "yt crf;e"
             },
         "Oracle_prepopulate": {
             "users": "Y",
@@ -36,7 +35,7 @@ defconfig = {
         , "Configuration": "orange"
         , "Network": "yellowgreen"
         , "Cluster": "lightsteelblue"
-        , "Queueing": "darkseagreen" #"aquamarine"
+        , "Queueing": "darkseagreen"
         , "Idle": "lightgrey"
         , "Other": "violet"
         }
@@ -66,5 +65,11 @@ def saveConfig():
 def literalEval( str ):
     return literal_eval( str )
 
+def getConfig( sect, opt, default=None ):
+    if opt in Config[sect]:
+        return Config[sect][opt]
+    if sect in defconfig and opt in defconfig[sect]:
+        return defconfig[sect][opt]
+    return default
 
 loadConfig()

@@ -1,5 +1,6 @@
 import sqlite3
 import oracledb
+
 from ..cf.conf import Config
 
 
@@ -24,22 +25,13 @@ class dbcache():
             self.get( "dba_objects", ["OBJECT_TYPE","OWNER","OBJECT_NAME"], [("OBJECT_ID",-1)] )
             self.get( "v$sql", ["SQL_TEXT"], [("SQL_ID","")] )
             cfg = Config["Oracle_prepopulate"]
-            tables = { "users": "dba_users", "services": "dba_services", "objects": "dba_objects", "sqls": "v$sql" }
             for key in cfg:
                 if cfg.get(key,'N') == 'Y':
-                    self.populate( tables.get(key,'') )
+                    self.populate( cache_tables.get(key,'') )
         return self
 
     def close( self ):
         self.connect( None, None )
-
-    def populateConfigured( self ):
-        if self._db and self._cache:
-            cfg = Config["Oracle_prepopulate"]
-            tables = { "users": "dba_users", "services": "dba_services", "objects": "dba_objects", "sqls": "v$sql" }
-            for key in cfg:
-                if cfg.get(key,'N') == 'Y':
-                    self.populate( tables.get(key,'') )
 
     def populate( self, table ):
         """table have to be present in cache"""

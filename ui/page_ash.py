@@ -7,6 +7,7 @@ from PySide2.QtGui import QIcon, QCursor, QPalette
 from PySide2.QtWidgets import QWidget, QMenu, QAction, QMessageBox, QFileDialog
 from PySide2.QtWidgets import QSplitter, QSpacerItem, QSizePolicy, QHBoxLayout, QVBoxLayout, QFormLayout
 from PySide2.QtWidgets import QLabel, QGroupBox, QPushButton, QComboBox, QLineEdit, QTableView, QHeaderView, QScrollBar
+
 from ..cf.conf import Config, loadConfig, saveConfig
 from ..db.provider import dataProvider
 from ..db.model import rawdataModel, groupModel, groupQueries

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from PySide2.QtCore import Signal, QObject, QThread
 from PySide2.QtWidgets import QMessageBox
 
-from ..cf.conf import Config
+from ..cf.conf import Config, getConfig
 from ..db.cache import dbcache
 
 #
@@ -208,7 +208,7 @@ class loaderThread( QObject ):
         self._delete = delete
         self._minmax = minmax
 
-    def doLoadAsh( self, lastSampleTime ):
+    def doLoadAsh( self, lastSampleTime, purgeBefore ):
         try:
             if self._oracle:
                 last_sample_time = self._oracle.var( oracledb.DB_TYPE_TIMESTAMP )
@@ -233,7 +233,7 @@ class loaderThread( QObject ):
                     self._sqlite.execute( "commit" )
                     lastSampleTime = rows[-1][ self._colSampleTime ]
                 self.lastInserted = self._oracle.rowcount
-                self._sqlite.execute( self._delete, (lastSampleTime-timedelta(hours=5),) )
+                self._sqlite.execute( self._delete, (purgeBefore,) )
                 self.lastDeleted = self._sqlite.rowcount
                 firstSampleTime, lastSampleTime = self._sqlite.execute( self._minmax ).fetchone()
                 #
@@ -245,7 +245,7 @@ class loaderThread( QObject ):
 
 class dataProvider( QObject ):
 
-    signalStartLoadAsh = Signal( datetime )
+    signalStartLoadAsh = Signal( datetime, datetime )
     signalLoadCompleteAsh = Signal()
 
     def __init__( self, parent=None, dataReady=None ):
@@ -276,7 +276,7 @@ class dataProvider( QObject ):
     def oracleConnect( self, config ):
         self.close()
         connection = config.get("name","-unknown-")
-        connectParams = dict( Config["Oracle"] ).copy()
+        connectParams = dict( Config["Oracle_defaults"] ).copy()
         connectParams.update( config.get("params",{}) )
         #
         self._parent.setStatus( f"Connecting to Oracle database '{connection}'" )
@@ -365,7 +365,9 @@ class dataProvider( QObject ):
         cursor = self._sqlite.cursor()
         cursor.execute( "DROP TABLE IF EXISTS ash" )
         cursor.execute( sqliteCreateTable )
-        self.firstSampleTime = self.lastSampleTime = datetime.now() - timedelta(hours=5)
+        self.prefetchHours = int( getConfig( "Sqlite", "prefetch" ) )
+        self.purgeHours = int( getConfig( "Sqlite", "purge" ) )
+        self.firstSampleTime = self.lastSampleTime = datetime.now() - timedelta( hours=self.prefetchHours )
 
     def columnByName( self, name ):
         return self._columns.index( name )
@@ -382,10 +384,11 @@ class dataProvider( QObject ):
                 pass
             self.threadIsBusy = True
             #self.loader.setConn( self._oracle.cursor(), self._oracleQuery, self.columnByName("SAMPLE_TIME"), self._sqlite.cursor(), self._sqliteInsert, self._sqliteDelete )
-            aHourAgo = datetime.now() - timedelta(hours=5)
-            if self.lastSampleTime < aHourAgo:
-                self.lastSampleTime = aHourAgo
-            self.signalStartLoadAsh.emit( self.lastSampleTime )
+            hoursAgo = datetime.now() - timedelta( hours=self.prefetchHours )
+            if self.lastSampleTime < hoursAgo:
+                self.lastSampleTime = hoursAgo
+            purgeBefore = datetime.now() - timedelta( hours=self.purgeHours )
+            self.signalStartLoadAsh.emit( self.lastSampleTime, purgeBefore )
 
     def loadCompleteHandlerAsh( self, firstSampleTime, lastSampleTime ):
         self._parent.setStatus( "Loading complete" )

@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from PySide2.QtWidgets import QWidget, QVBoxLayout
 from PySide2.QtGui import QColor, QPalette
-from ..cf.conf import Config
+
 from ..cf.const import constWaitLabels, constWaitColors
 
 def qcolor2mpl( qcolor ):

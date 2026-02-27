@@ -54,7 +54,7 @@ class connlistTreeWidget( QTreeWidget ):
         menu.addAction( actConnect )
         menu.setDefaultAction( actConnect )
         actEdit = QAction( "Edit", self )
-        actEdit.triggered.connect( lambda: self.connectDialog(config,mainWindow) )
+        actEdit.triggered.connect( lambda: self.openConnectDialog(config) )
         menu.addAction( actEdit )
         if config.get("src","") in [ "saved", "edit" ]:
             actDelete = QAction( "Delete", self )
@@ -62,7 +62,7 @@ class connlistTreeWidget( QTreeWidget ):
             menu.addAction( actDelete )
         menu.exec_( self.mapToGlobal( pos ) )
 
-    def connectDialog( self, config ):
+    def openConnectDialog( self, config ):
         dialog = connectDialog( self.mainWindow, config )
         dialog.exec()
 

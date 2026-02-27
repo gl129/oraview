@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QWidget, QStatusBar, QToolBar, QDockWidget, QActio
 from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem
 from PySide2.QtWidgets import QSizePolicy
 
-from ..cf.conf import Config, loadConfig, saveConfig
+from ..cf.conf import getConfig, loadConfig, saveConfig
 from ..ut.kilomega import toKMGbytes
 from ..db.provider import dataProvider
 from ..db.cache import dbcache
@@ -151,7 +151,7 @@ class MainWindow( QMainWindow ):
 
 
     def viewportSetup( self ):
-        self.interval = 10
+        self.interval = int( getConfig( "MainWindow", "refreshInterval" ) )
         self.timer.setInterval( self.interval * 1000 )
         for i in range( self.centralWidget().count() ):
             self.centralWidget().widget( i ).viewportSetup( self.data, self.cache )

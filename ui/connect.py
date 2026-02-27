@@ -1,6 +1,7 @@
 import oracledb
 from PySide2.QtCore import Qt, QSize
 from PySide2.QtWidgets import QWidget, QHBoxLayout, QFormLayout, QSizePolicy, QGroupBox, QLabel, QPushButton, QMessageBox, QApplication, QLineEdit, QComboBox, QSpacerItem
+
 from ..cf.conf import Config
 from ..ui.win import childWin
 from ..db.cache import cache_tables
@@ -30,8 +31,8 @@ class connectDialog( childWin ):
         grParams = QGroupBox( "Connection Params" )
         lyParams = QFormLayout()
 
-        self.labelNotAllowed = QLabel( "<font color='red'><b>Can't modify tnsnames.ora connection parameters</b></font>" )
-        lyParams.addWidget( self.labelNotAllowed )
+        #self.labelNotAllowed = QLabel( "<font color='red'><b>Can't modify tnsnames.ora connection parameters</b></font>" )
+        #lyParams.addWidget( self.labelNotAllowed )
 
         self.editConnName = QLineEdit()
         lyParams.addRow( '<b>Name</b>', self.editConnName )
@@ -64,7 +65,8 @@ class connectDialog( childWin ):
         # Current Connection Info
 
         isDbOpen = ( mainWindow.data._oracle is not None )
-        if isDbOpen:
+        isConfigCurrent = ( mainWindow.currentConfig == self.config )
+        if isDbOpen and isConfigCurrent:
             with mainWindow.data._oracle.cursor() as cursor:
                 database = cursor.execute( "select name, db_unique_name, database_role, platform_name, open_mode, log_mode, created, resetlogs_time from v$database" ).fetchone()
                 instance = cursor.execute( "select instance_number, instance_name, host_name, version_full, database_type, startup_time from v$instance" ).fetchone()
@@ -79,7 +81,7 @@ class connectDialog( childWin ):
             processes = ''
             params = {}
 
-        grInfo = QGroupBox( "Database Info" )
+        grInfo = QGroupBox( "Current Connection Info" )
         #grInfo.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Expanding )
         lyInfo = QHBoxLayout( )
 
@@ -178,7 +180,7 @@ class connectDialog( childWin ):
         self.mainWindow.disconnectAll()
 
     def clickedTest( self ):
-        connectParams = dict( Config["Oracle"] ).copy()
+        connectParams = dict( Config["Oracle_defaults"] ).copy()
         connectParams.update( self.getConnectParams() )
         try:
             oracle = oracledb.connect( **connectParams )
