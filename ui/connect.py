@@ -7,13 +7,13 @@ from ..ui.win import childWin
 from ..db.cache import cache_tables
 
 
-oracleParamsList = [
-        "dsn",
-        [ "user", "password", "mode" ],
-        [ "protocol", "host", "port", "sdu" ],
-        [ "service_name", "instance_name", "sid", "server_type" ]
-#        [ "program", "machine", "terminal", "osuser" ]
-        ]
+#oracleParamsList = [
+#        "dsn",
+#        [ "user", "password", "mode" ],
+#        [ "protocol", "host", "port", "sdu" ],
+#        [ "service_name", "instance_name", "sid", "server_type" ]
+##        [ "program", "machine", "terminal", "osuser" ]
+#        ]
 
 def titleString( string ):
     return string.replace( '_', ' ' ).title()
@@ -148,8 +148,8 @@ class connectDialog( childWin ):
             if param == "mode":
                 widget = QComboBox()
                 widget.addItem( "Normal", "" )
-                widget.addItem( "as SYSDBA", 2 )
-                widget.addItem( "as SYSOPER", 4 )
+                widget.addItem( "as SYSDBA", "2" )
+                widget.addItem( "as SYSOPER", "4" )
                 #widget.setCurrentText( text )
             else:
                 widget = QLineEdit( ) #text )
@@ -192,8 +192,10 @@ class connectDialog( childWin ):
 
 
     def clickedDisconnect( self ):
-        self.mainWindow.disconnectAll()
-        self.fillConnectionInfo()
+        try:
+            self.mainWindow.disconnectAll()
+        finally:
+            self.fillConnectionInfo()
 
 
     def clickedTest( self ):
@@ -233,8 +235,10 @@ class connectDialog( childWin ):
             name = self.editConnName.text() or 'noname'
             self.config = dict( src="edit", name=name, params=params )
             self.mainWindow.treeConnections.addRecent( self.config )
-        self.mainWindow.connectTo( self.config )
-        self.fillConnectionInfo()
+        try:
+            self.mainWindow.connectTo( self.config )
+        finally:
+            self.fillConnectionInfo()
 
 
     def refreshCurrentParams( self ):
@@ -254,7 +258,7 @@ class connectDialog( childWin ):
             param = widget.property( "o$param" )
             text = connectParams.get( param, "" )
             if param == "mode":
-                widget.setCurrentText( text )
+                widget.setCurrentIndex( int(text or "0") / 2 )  # 0: Normal, 2: as SYSDBA, 4: as SYSOPER
             else:
                 widget.setText( text )
 
