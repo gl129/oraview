@@ -1,6 +1,6 @@
 import numpy
 import pandas
-from datetime import timedelta
+from datetime import datetime, timedelta
 from matplotlib import dates
 from PySide2.QtCore import Qt, QSize, QItemSelectionModel
 from PySide2.QtGui import QIcon, QCursor, QPalette
@@ -50,12 +50,14 @@ class ashPage( QSplitter ):
                 self.plotAsh.setMinimumHeight( 220 )
                 lyPlot.addWidget( self.plotAsh )
                 self.scrollAsh = QScrollBar( Qt.Horizontal )
-                self.scrollAsh.setMinimum( -18000 )
-                self.scrollAsh.setMaximum( 0 )
-                self.scrollAsh.setPageStep( 3600 )
-                self.scrollAsh.setSingleStep( 600 )
+                #self.scrollAsh.setMinimum( -18000 )
+                #self.scrollAsh.setMaximum( 0 )
+                self.scrollAsh.setRange( 0, 0 )
+                self.scrollAsh.setPageStep( 1800 )
+                self.scrollAsh.setSingleStep( 300 )
                 #self.scrollAsh.setValue( 0 )
                 self.scrollAsh.setTracking( True )
+                #self.scrollAsh.sliderMoved.connect( self.scrollAshChanged )
                 self.scrollAsh.valueChanged.connect( self.scrollAshChanged )
                 lyPlot.addWidget( self.scrollAsh )
             if True:
@@ -181,15 +183,6 @@ class ashPage( QSplitter ):
         #self.addWidget( spMain )
         self.viewportClear( )
 
-    def scrollAshChanged( self, val ):
-        self.scrollAsh.setEnabled( False )
-        try:
-            if val == 0:
-                self.viewportRefresh()
-            else:
-                self.dataReady()
-        finally:
-            self.scrollAsh.setEnabled( True )
 
     def bgErrorStyle( self ):
         r, g, b, a = self.palette().color( QPalette.Base ).getRgb()
@@ -227,17 +220,68 @@ class ashPage( QSplitter ):
             self.plotAsh.setSelector( (beg, end) )
             self.refreshGroupData()
 
-    def clickedReport( self ):
-        if self.data._oracle is not None:
-            beg, end = self.plotAsh.getSelector()
-            winReport( self.mainWindow, self.data._oracle, self.data._sqlite, num2date(beg), num2date(end) ).show()
+    def scrollAshChanged( self, val ):
+        self.scrollAsh.setEnabled( False )
+        try:
+            if val == 0:
+                self.viewportRefresh()
+            else:
+                self.dataReady()
+        finally:
+            self.scrollAsh.setEnabled( True )
 
-    def clickedPause( self, checked ):
-        if checked:
-            self.btnPause.setText( ">Paused<" )
-        else:
-            self.btnPause.setText( "Pause" )
-            self.viewportRefresh()
+    def viewportClear( self ):
+        self.data = None
+        self.cache = None
+        #
+        self.plotAsh.setConn( None )
+        self.groups.setConn( None )
+        self.rawdata.setConn( None )
+        #self.editPlotSelBeg.setText( "" )
+        #self.editPlotSelEnd.setText( "" )
+        self.btnRefresh.setDisabled( True )
+        self.btnPause.setText( "Pause" )
+        self.btnPause.setChecked( False )
+        self.btnPause.setDisabled( True )
+        self.dropGroupBy.setCurrentIndex( 0 )
+        self.editSelectedGroup.setText("")
+
+    def viewportSetup( self, data, cache ):
+        self.data = data
+        self.cache = cache
+        #
+        self.plotAsh.setConn( self.data._sqlite )
+        self.groups.setConn( self.data._sqlite, self.cache )
+        self.groups.setQuery( self.dropGroupBy.currentData() )
+        self.rawdata.setConn( self.data._sqlite, self.cache )
+        self.rawdata.setQuery( self.data._sqliteQuery, " ORDER BY sample_time desc" )
+        self.btnPause.setDisabled( False )
+        self.btnRefresh.setDisabled( False )
+        self.scrollAsh.setEnabled( False )
+        self.scrollAsh.setRange( 0, 0 )
+        self.scrollAsh.setEnabled( True )
+
+    def viewportRefresh( self ):
+        if not self.btnPause.isChecked() and self.scrollAsh.value() == 0:
+            self.dataRefresh()
+
+    def dataRefresh( self ):
+        self.data.loadDataAsh()
+        scrollSeconds = -( self.data.lastSampleTime - self.data.firstSampleTime - timedelta(hours=1) ).total_seconds()
+        if scrollSeconds > 0:
+            scrollSeconds = 0
+        self.scrollAsh.setMinimum( scrollSeconds )
+        #self.scrollAsh.setRange( scrollSeconds, 0 )
+
+    def dataReady( self ):
+#        if self.data:
+        self.mainWindow.setStatus( "Plotting" )
+        #end = self.data.lastSampleTime + timedelta( seconds=self.scrollAsh.value() )
+        end = datetime.now() + timedelta( seconds=self.scrollAsh.value() )
+        beg = end - timedelta( hours=1 )
+        self.plotAsh.plotData( beg, end, self.mainWindow.interval )
+        if not self.plotAsh.selectorVisible() and self.scrollAsh.value() == 0:
+            self.refreshGroupData()
 
     def changedGroupBy( self, idx ):
         self.editSelectedGroup.setStyleSheet( "" )
@@ -273,6 +317,47 @@ class ashPage( QSplitter ):
             self.editSelectedGroup.setText( ','.join( map(str,vals) ) )
             self.editSelectedGroup.setStyleSheet( "" )
             self.refreshRawData()
+
+    def groupSelection( self ):
+        inds = self.tabGroups.selectedIndexes()
+        if inds:
+            """ some row selected """
+            row = inds[0].row()
+            idCols = self.dropGroupBy.currentData()["rawdata_cols"]
+            idVals = [ self.groups.cellData( row, i ) for i,col in enumerate( idCols )  ]
+            return ( idCols, idVals )
+        else:
+            return ( [], [] )
+
+    def restoreGroupSelection( self, cols, vals ):
+        self.tabGroups.clearSelection()
+        if len(cols)>0 and len(vals)>0:
+            row = self.groups.locateFirst( range(len(cols)), vals )
+            if row is not None:
+                index = self.groups.index( row, 0 )
+                self.tabGroups.selectionModel().setCurrentIndex( index, QItemSelectionModel.SelectCurrent|QItemSelectionModel.Rows )
+
+    def refreshGroupData( self ):
+        self.tabGroups.setUpdatesEnabled( False )
+        cols, vals = self.groupSelection()
+        beg, end = self.plotAsh.getSelector()
+        self.groups.refreshModel( beg, end )
+        self.restoreTabColumnSizes( self.tabGroups )
+        self.restoreGroupSelection( cols, vals )
+        self.tabGroups.setUpdatesEnabled( True )
+        self.refreshRawData()
+
+    def clickedReport( self ):
+        if self.data._oracle is not None:
+            beg, end = self.plotAsh.getSelector()
+            winReport( self.mainWindow, self.data._oracle, self.data._sqlite, num2date(beg), num2date(end) ).show()
+
+    def clickedPause( self, checked ):
+        if checked:
+            self.btnPause.setText( ">Paused<" )
+        else:
+            self.btnPause.setText( "Pause" )
+            self.viewportRefresh()
 
     def clickedExpandRawdata( self, checked ):
         for w in self.expandedVisibility:
@@ -311,85 +396,6 @@ class ashPage( QSplitter ):
                     killSession.triggered.connect( lambda: self.killSession(sid,serial) )
                     menu.addAction( killSession )
                 menu.exec_( QCursor.pos() )
-
-    def viewportClear( self ):
-        #self.stopAutoRefresh()
-        #self.data.close()
-        #self.currentConfig = None
-        self.data = None
-        self.cache = None
-        #
-        self.plotAsh.setConn( None )
-        self.groups.setConn( None )
-        self.rawdata.setConn( None )
-        #self.editPlotSelBeg.setText( "" )
-        #self.editPlotSelEnd.setText( "" )
-        self.btnRefresh.setDisabled( True )
-        self.btnPause.setText( "Pause" )
-        self.btnPause.setChecked( False )
-        self.btnPause.setDisabled( True )
-        self.dropGroupBy.setCurrentIndex( 0 )
-        self.editSelectedGroup.setText("")
-
-    def viewportSetup( self, data, cache ):
-        self.data = data
-        self.cache = cache
-        #
-        self.plotAsh.setConn( self.data._sqlite )
-        self.groups.setConn( self.data._sqlite, self.cache )
-        self.groups.setQuery( self.dropGroupBy.currentData() )
-        self.rawdata.setConn( self.data._sqlite, self.cache )
-        self.rawdata.setQuery( self.data._sqliteQuery, " ORDER BY sample_time desc" )
-        self.btnPause.setDisabled( False )
-        self.btnRefresh.setDisabled( False )
-        self.scrollAsh.setValue( 0 )
-
-    def dataReady( self ):
-        if self.data:
-            self.mainWindow.setStatus( "Plotting" )
-            end = self.data.lastSampleTime + timedelta( seconds=self.scrollAsh.value() )
-            beg = end - timedelta( hours=1 )
-            self.plotAsh.plotData( beg, end, self.mainWindow.interval )
-            if not self.plotAsh.selectorVisible() and self.scrollAsh.value() == 0:
-                self.refreshGroupData()
-
-    def dataRefresh( self ):
-        self.data.loadDataAsh()
-        scrollSeconds = -( self.data.lastSampleTime - self.data.firstSampleTime - timedelta(hours=1) ).total_seconds()
-        self.scrollAsh.setMinimum( scrollSeconds )
-
-    def viewportRefresh( self ):
-        if not self.btnPause.isChecked() and self.scrollAsh.value() == 0:
-            self.dataRefresh()
-
-    def groupSelection( self ):
-        inds = self.tabGroups.selectedIndexes()
-        if inds:
-            """ some row selected """
-            row = inds[0].row()
-            idCols = self.dropGroupBy.currentData()["rawdata_cols"]
-            idVals = [ self.groups.cellData( row, i ) for i,col in enumerate( idCols )  ]
-            return ( idCols, idVals )
-        else:
-            return ( [], [] )
-
-    def restoreGroupSelection( self, cols, vals ):
-        self.tabGroups.clearSelection()
-        if len(cols)>0 and len(vals)>0:
-            row = self.groups.locateFirst( range(len(cols)), vals )
-            if row is not None:
-                index = self.groups.index( row, 0 )
-                self.tabGroups.selectionModel().setCurrentIndex( index, QItemSelectionModel.SelectCurrent|QItemSelectionModel.Rows )
-
-    def refreshGroupData( self ):
-        self.tabGroups.setUpdatesEnabled( False )
-        cols, vals = self.groupSelection()
-        beg, end = self.plotAsh.getSelector()
-        self.groups.refreshModel( beg, end )
-        self.restoreTabColumnSizes( self.tabGroups )
-        self.restoreGroupSelection( cols, vals )
-        self.tabGroups.setUpdatesEnabled( True )
-        self.refreshRawData()
 
     def refreshRawData( self ):
         self.tabRawdata.setUpdatesEnabled( False )

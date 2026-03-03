@@ -184,7 +184,7 @@ def convertBigInts( rows ):
 
 class loaderThread( QObject ):
 
-    signalLoadCompleteAsh = Signal( datetime, datetime )
+    signalLoaderCompleteAsh = Signal( datetime, datetime )
 
     def __init__( self ):
         #super(loaderThread,self).__init__()
@@ -237,7 +237,7 @@ class loaderThread( QObject ):
                 self.lastDeleted = self._sqlite.rowcount
                 firstSampleTime, lastSampleTime = self._sqlite.execute( self._minmax ).fetchone()
                 #
-                self.signalLoadCompleteAsh.emit( firstSampleTime, lastSampleTime )
+                self.signalLoaderCompleteAsh.emit( firstSampleTime, lastSampleTime )
         except Exception as e:
             #print( str(e) )
             raise
@@ -257,7 +257,7 @@ class dataProvider( QObject ):
         self.loader = loaderThread()
         #self.loader.moveToThread( self.thread );
         self.signalStartLoadAsh.connect( self.loader.doLoadAsh )
-        self.loader.signalLoadCompleteAsh.connect( self.loadCompleteHandlerAsh )
+        self.loader.signalLoaderCompleteAsh.connect( self.loadCompleteHandlerAsh )
         self.threadIsBusy = False
         #self.thread.start()
         self.close()

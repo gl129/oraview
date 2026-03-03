@@ -10,10 +10,12 @@ from PySide2.QtGui import QColor, QPalette
 
 from ..cf.const import constWaitLabels, constWaitColors
 
+
 def qcolor2mpl( qcolor ):
 #    r, g, b, a = qcolor.getRgb()
 #    mpl_color = (r / 255.0, g / 255.0, b / 255.0, a / 255.0)
     return tuple( c/255.0 for c in qcolor.getRgb() )
+
 
 class visualPlot( QWidget ):
 
@@ -86,7 +88,7 @@ class visualPlot( QWidget ):
         #self.ax.xaxis.set_minor_locator( dates.MinuteLocator() )
         self.ax.xaxis.set_major_formatter( dates.ConciseDateFormatter(locator) )
         # !!!
-        self.ax.set_xlim( datetime.now()-timedelta(hours=1), datetime.now() )
+        #self.ax.set_xlim( datetime.now()-timedelta(hours=1), datetime.now() )
         self._figure.set_facecolor( self.buttonColor )
         self.ax.set_facecolor( self.bgColor )
         self.ax.xaxis.label.set_color( self.textColor )
@@ -115,22 +117,20 @@ class ashPlot( visualPlot ):
         sampletimeColumn = "datetime((strftime('%s',sample_time)/:interval)*:interval,'unixepoch')"
         oncpuColumn = f'''sum( case when wait_class is null then 1 else 0 end )*1.0/:interval as "On CPU"'''
         labelColumns = [ f'''sum( case when wait_class='{l}' then 1 else 0 end )*1.0/:interval as "{l}"''' for l in constWaitLabels if l !='On CPU' ]
-        ashQuery = f"""SELECT {sampletimeColumn} as "SampleTime", {oncpuColumn}, {', '.join( labelColumns )} FROM ash WHERE sample_time between :beg and :end GROUP BY {sampletimeColumn} ORDER BY 1"""
-        timelineQuery = f"""WITH recursive timeline(dt) as (SELECT :beg UNION ALL datetime(dt, '+'||:interval||' minutes') FROM timeline WHERE dt<:end) SELECT st "SampleTime"""
+        #ashQuery = f"""SELECT {sampletimeColumn} as "SampleTime", {oncpuColumn}, {', '.join( labelColumns )} FROM ash WHERE sample_time between :beg and :end GROUP BY {sampletimeColumn} ORDER BY 1"""
+        ashQuery = f"""
+                WITH recursive timeline(dt) as (select :beg union all select datetime(dt,'+'||:interval||' second') from timeline where dt<:end)
+                SELECT {sampletimeColumn} as "SampleTime", {oncpuColumn}, {', '.join( labelColumns )} 
+                  FROM (select sample_time, wait_class from ash union all select dt, '-' from timeline)
+                 WHERE sample_time between :beg and :end 
+                 GROUP BY {sampletimeColumn} 
+                 ORDER BY 1"""
         self._query = ashQuery
-
-#        select SampleTime, '-' WAIT_CLASS from timeline
-#        union all
-#        select datetime((strftime('%s',sample_time)/:interval)*:interval,'unixepoch') SampleTime, wait_class
 
     def plotData( self, beg, end, interval ):
         if self._conn:
             if not self._query:
                 self.buildQuery( )
             if beg and end and interval:
-                #data = pandas.read_sql_query( self._query, self._conn, params={"beg":beg,"end":end,"interval":interval}, parse_dates=["SampleTime"], index_col=["SampleTime"] )
-                data = pandas.read_sql_query( self._query, self._conn, params={"beg":beg,"end":end,"interval":interval}, parse_dates={"SampleTime":{"format":"%Y-%m-%d %H:%M:%S"}}, index_col=["SampleTime"] ) # .%f
-                print( data )
-                full_timeline = pandas.date_range( data.index.min(), data.index.max(), freq=f"{interval}s" )
-                data = data.reindex( full_timeline ) #, fill_value=0 )
+                data = pandas.read_sql_query( self._query, self._conn, params={"beg":beg,"end":end,"interval":interval}, parse_dates={"SampleTime":{"format":"%Y-%m-%d %H:%M:%S"}}, index_col=["SampleTime"] )
                 super().plotData( data )
