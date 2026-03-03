@@ -4,8 +4,12 @@ import pandas
 import matplotlib.dates as dates
 from datetime import datetime
 from PySide2.QtCore import Qt, QAbstractTableModel, QModelIndex
+
 from ..ut.kilomega import toKMGbytes
 from ..cf.const import constWaitLabels
+
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
 
 
 class frameModel( QAbstractTableModel ):

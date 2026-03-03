@@ -4,6 +4,9 @@ from PySide2.QtGui import QFontMetrics
 from PySide2.QtWidgets import QTableView
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 class ToolTipTableView( QTableView ):
 
     def __init__( self, parent=None ):

@@ -6,6 +6,9 @@ from ..cf.conf import Config, literalEval
 from ..ui.connect import connectDialog
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 class connlistTreeWidget( QTreeWidget ):
 
     def __init__( self, mainWindow, data ):

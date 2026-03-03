@@ -21,6 +21,9 @@ from ..ui.report import winReport
 from ..ut.debug import debug
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 def num2date( num ):
     return dates.num2date( num  ).replace( tzinfo=None )
 

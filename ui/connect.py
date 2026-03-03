@@ -7,13 +7,8 @@ from ..ui.win import childWin
 from ..db.cache import cache_tables
 
 
-#oracleParamsList = [
-#        "dsn",
-#        [ "user", "password", "mode" ],
-#        [ "protocol", "host", "port", "sdu" ],
-#        [ "service_name", "instance_name", "sid", "server_type" ]
-##        [ "program", "machine", "terminal", "osuser" ]
-#        ]
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
 
 def titleString( string ):
     return string.replace( '_', ' ' ).title()

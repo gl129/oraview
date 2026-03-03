@@ -4,7 +4,11 @@ from PySide2.QtWidgets import QSpacerItem, QHBoxLayout, QSizePolicy, QPlainTextE
 #from pygments import highlight
 #from pygments.lexers import SqlLexer
 #from pygments.formatters import HtmlFormatter
+
 from ..ui.win import childWin
+
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
 
 
 class winSql( childWin ):

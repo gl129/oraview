@@ -11,6 +11,9 @@ from PySide2.QtGui import QColor, QPalette
 from ..cf.const import constWaitLabels, constWaitColors
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 def qcolor2mpl( qcolor ):
 #    r, g, b, a = qcolor.getRgb()
 #    mpl_color = (r / 255.0, g / 255.0, b / 255.0, a / 255.0)
