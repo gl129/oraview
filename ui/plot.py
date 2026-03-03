@@ -85,7 +85,8 @@ class visualPlot( QWidget ):
         self.ax.xaxis.set_major_locator( locator )
         #self.ax.xaxis.set_minor_locator( dates.MinuteLocator() )
         self.ax.xaxis.set_major_formatter( dates.ConciseDateFormatter(locator) )
-        #self.ax.set_xlim( datetime.now()-timedelta(hours=1), datetime.now() )
+        # !!!
+        self.ax.set_xlim( datetime.now()-timedelta(hours=1), datetime.now() )
         self._figure.set_facecolor( self.buttonColor )
         self.ax.set_facecolor( self.bgColor )
         self.ax.xaxis.label.set_color( self.textColor )
@@ -129,6 +130,7 @@ class ashPlot( visualPlot ):
             if beg and end and interval:
                 #data = pandas.read_sql_query( self._query, self._conn, params={"beg":beg,"end":end,"interval":interval}, parse_dates=["SampleTime"], index_col=["SampleTime"] )
                 data = pandas.read_sql_query( self._query, self._conn, params={"beg":beg,"end":end,"interval":interval}, parse_dates={"SampleTime":{"format":"%Y-%m-%d %H:%M:%S"}}, index_col=["SampleTime"] ) # .%f
+                print( data )
                 full_timeline = pandas.date_range( data.index.min(), data.index.max(), freq=f"{interval}s" )
                 data = data.reindex( full_timeline ) #, fill_value=0 )
                 super().plotData( data )

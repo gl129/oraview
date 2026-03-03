@@ -12,27 +12,25 @@ from ..db.cache import dbcache
 from ..ui.connect import connectDialog
 from ..ui.connlist import connlistTreeWidget
 from ..ui.page_ash import ashPage
+from ..ut.icon import updateWinIcon
 
 
 class MainWindow( QMainWindow ):
 
 
-    def __init__( self, ico_path ):
+    def __init__( self ):
         super().__init__()
         self.windowsList = []
 
         self.setWindowTitle( "DBA Oracle Viewer" )
         self.resize( 1200, 800 )
 
-        #self.setWindowIcon( QIcon(ico_path) )
-        #loadConfig()
-
         self.data = dataProvider( self )
         self.cache = dbcache( )
         #self.data.signalLoadComplete.connect( self.viewportRefresh )
         self.cache = dbcache( None, None )
         self.timer = QTimer( self )
-        self.timer.timeout.connect( self.pageRefresh )
+        self.timer.timeout.connect( self.viewportRefresh )
 
         self.labelConnName = QLabel( "Disconnected" )
         self.labelConnName.setFixedWidth( 200 )
@@ -72,7 +70,7 @@ class MainWindow( QMainWindow ):
 
         tabCentral = QTabWidget()
         tabCentral.addTab( ashPage(self,self.data), "Sessions History" )
-        tabCentral.currentChanged.connect( self.pageRefresh )
+        tabCentral.currentChanged.connect( self.viewportRefresh )
         self.setCentralWidget( tabCentral )
 
         self.disconnectAll( )
@@ -146,7 +144,7 @@ class MainWindow( QMainWindow ):
         for i in range( self.centralWidget().count() ):
             self.centralWidget().widget( i ).viewportClear( )
         self.setStatus( "Ready" )
-        self.setWindowIcon( QIcon(self.grab()) )
+        updateWinIcon( self )
 
 
     def viewportSetup( self ):
@@ -157,7 +155,7 @@ class MainWindow( QMainWindow ):
 
 
     def startAutoRefresh( self ):
-        self.pageRefresh()
+        self.viewportRefresh()
         self.timer.start()
 
 
@@ -165,15 +163,10 @@ class MainWindow( QMainWindow ):
         self.timer.stop()
 
 
-    def pageRefresh( self ):
-        self.centralWidget().currentWidget().pageRefresh()
+    def viewportRefresh( self ):
+        self.centralWidget().currentWidget().viewportRefresh()
         self.setStatus( "Ready" )
-        self.setWindowIcon( QIcon(self.grab()) )
-
-
-#    def viewportRefresh( self ):
-#        self.centralWidget().currentWidget().viewportRefresh()
-#        self.setStatus( "Ready" )
+        updateWinIcon( self )
 
 
     def closeEvent( self, event ):

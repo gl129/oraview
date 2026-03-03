@@ -74,13 +74,13 @@ class connectDialog( childWin ):
             self.info = {}
             infoEdits = [ "database", "unique_name", "inst_name", 
                           "platform", "host_name", "version",
-                          "type", "role", "log_mode",
-                          "open_mode", "sessions", "processes",
+                          "role", "open_mode", "log_mode",
+                          "sessions", "processes", "",
                           "created", "resetlogs", "startup" ]
             infoLayouts = [ QFormLayout() for i in range(3) ]
 
             for i,t in enumerate( infoEdits ):
-                infoLayouts[ i % 3 ].addRow( t.replace( '_', ' ').title(), readonlyEdit( self.info, t ) )
+                infoLayouts[ i % 3 ].addRow( t.replace( '_', ' ').title(), readonlyEdit( self.info, t ))
 
             for i in range(3):
                 lyInfo.addLayout( infoLayouts[i] )
@@ -108,17 +108,21 @@ class connectDialog( childWin ):
     def fillConnectionInfo( self ):
         if self.isConfigCurrent():
             with self.mainWindow.data._oracle.cursor() as cursor:
+                version = cursor.execute( "select version from v$instance" ).fetchone()[0]
+                if version[1] != "." and int(version[0:2]) >= 18:
+                    version = cursor.execute( "select version_full from v$instance" ).fetchone()[0]
                 database = cursor.execute( "select name, db_unique_name, database_role, platform_name, open_mode, log_mode, created, resetlogs_time from v$database" ).fetchone()
-                instance = cursor.execute( "select instance_number, instance_name, host_name, version_full, database_type, startup_time from v$instance" ).fetchone()
+                instance = cursor.execute( "select instance_number, instance_name, host_name, startup_time from v$instance" ).fetchone()
                 sessions = cursor.execute( "select count(*) from v$session" ).fetchone()[0]
                 processes = cursor.execute( "select count(*) from v$process" ).fetchone()[0]
                 pnames = [ "sessions", "processes", "cursors" ]
                 params = { v[0]: v[1] for v in cursor.execute( f"""select name, value from v$parameter where name in ('{"','".join(pnames)}')""" ).fetchall() }
         else:
-            database = [ '' for i in range(8) ]
-            instance = [ '' for i in range(6) ]
-            sessions = ''
-            processes = ''
+            version = ""
+            database = [ "" for i in range(8) ]
+            instance = [ "" for i in range(4) ]
+            sessions = ""
+            processes = ""
             params = {}
 
         self.info["database"].setText( database[0] )
@@ -126,16 +130,16 @@ class connectDialog( childWin ):
         self.info["inst_name"].setText( instance[1] )
         self.info["platform"].setText( database[3] )
         self.info["host_name"].setText( instance[2] )
-        self.info["version"].setText( instance[3] )
-        self.info["type"].setText( instance[4] )
+        self.info["version"].setText( version )
         self.info["role"].setText( database[2] )
-        self.info["log_mode"].setText( database[5] )
         self.info["open_mode"].setText( database[4] )
+        self.info["log_mode"].setText( database[5] )
         self.info["sessions"].setText( f"{sessions}/{params.get('sessions','')}" )
         self.info["processes"].setText( f"{processes}/{params.get('processes','')}" )
-        self.info["created"].setText( str(database[5]) )
+        self.info[""].setText( "" )
+        self.info["created"].setText( str(database[6]) )
         self.info["resetlogs"].setText( str(database[7]) )
-        self.info["startup"].setText( str(database[5]) )
+        self.info["startup"].setText( str(instance[3]) )
 
 
     def isConfigCurrent( self ):

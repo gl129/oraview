@@ -11,8 +11,6 @@ from .ui.main_window import MainWindow
 
 oracledb.init_oracle_client()
 
-ico_path = os.path.dirname(__file__) + "/img/ico.png"
-
 
 def sigIntHandler( signum, frame ):
     """Ctrl-C handler"""
@@ -54,7 +52,7 @@ if __name__ == "__main__":
     timer.timeout.connect( lambda: None ) # do nothing, just wake up event loop to react for Ctrl-C
     timer.start( 100 )
 
-    window = MainWindow( ico_path )
+    window = MainWindow( )
     window.show()
 
     sys.exit( app.exec_() )

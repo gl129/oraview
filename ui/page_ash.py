@@ -31,7 +31,7 @@ class ashPage( QSplitter ):
         super().__init__( Qt.Orientation.Vertical )
         self.mainWindow = mainWindow
         self.data = dataProvider
-        self.data.signalLoadCompleteAsh.connect( self.viewportRefresh )
+        self.data.signalLoadCompleteAsh.connect( self.dataReady )
 
 #        self._sqlite = sqlite
 #        self._mutex = mutex
@@ -185,9 +185,9 @@ class ashPage( QSplitter ):
         self.scrollAsh.setEnabled( False )
         try:
             if val == 0:
-                self.pageRefresh()
-            else:
                 self.viewportRefresh()
+            else:
+                self.dataReady()
         finally:
             self.scrollAsh.setEnabled( True )
 
@@ -237,7 +237,7 @@ class ashPage( QSplitter ):
             self.btnPause.setText( ">Paused<" )
         else:
             self.btnPause.setText( "Pause" )
-            self.pageRefresh()
+            self.viewportRefresh()
 
     def changedGroupBy( self, idx ):
         self.editSelectedGroup.setStyleSheet( "" )
@@ -344,7 +344,7 @@ class ashPage( QSplitter ):
         self.btnRefresh.setDisabled( False )
         self.scrollAsh.setValue( 0 )
 
-    def viewportRefresh( self ):
+    def dataReady( self ):
         if self.data:
             self.mainWindow.setStatus( "Plotting" )
             end = self.data.lastSampleTime + timedelta( seconds=self.scrollAsh.value() )
@@ -358,7 +358,7 @@ class ashPage( QSplitter ):
         scrollSeconds = -( self.data.lastSampleTime - self.data.firstSampleTime - timedelta(hours=1) ).total_seconds()
         self.scrollAsh.setMinimum( scrollSeconds )
 
-    def pageRefresh( self ):
+    def viewportRefresh( self ):
         if not self.btnPause.isChecked() and self.scrollAsh.value() == 0:
             self.dataRefresh()
 

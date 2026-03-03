@@ -2,6 +2,9 @@ from PySide2.QtCore import Qt, QSize
 from PySide2.QtGui import QIcon
 from PySide2.QtWidgets import QDialog, QVBoxLayout
 
+from ..ut.icon import updateWinIcon
+
+
 class childWin( QDialog ):
 
     def __init__( self, mainWindow, title, conn=None ):
@@ -25,7 +28,7 @@ class childWin( QDialog ):
             super().keyPressEvent( event )
 
     def showEvent( self, event ):
-        self.setWindowIcon( QIcon(self.grab()) )
+        updateWinIcon( self )
 
     def closeEvent( self, event ):
         self.mainWindow.windowsList.remove( self )
