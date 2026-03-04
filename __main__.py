@@ -45,6 +45,12 @@ def exceptionHandler( exc, val, trbk ):
 
 if __name__ == "__main__":
 
+    if os.fork():
+        """Backgrounding, exit parent process now"""
+        os._exit(0)
+
+    """Only child (backgrounded) process here"""
+
     os.environ[ "QT_LOGGING_RULES" ] = "*.debug=false;qt.qpa.*=false"
     signal.signal( signal.SIGINT, sigIntHandler )
     sys.excepthook = exceptionHandler
