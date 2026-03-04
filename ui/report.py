@@ -2,7 +2,11 @@ import oracledb
 from PySide2.QtGui import QFont, QIcon
 from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QFormLayout, QSpacerItem, QSizePolicy, QWidget, QTextBrowser, QPushButton, QComboBox, QMessageBox, QApplication
+
 from ..ui.win import childWin
+
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
 
 
 class dbComboBox( QComboBox ):

@@ -15,6 +15,9 @@ from ..ui.page_ash import ashPage
 from ..ut.icon import updateWinIcon
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 class MainWindow( QMainWindow ):
 
 

@@ -9,6 +9,10 @@ from PySide2.QtWidgets import QMessageBox
 from ..cf.conf import Config, getConfig
 from ..db.cache import dbcache
 
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 #
 # Oracle View User:
 #   create user oraview identified by "password" account unlock;

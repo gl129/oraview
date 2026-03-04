@@ -1,6 +1,10 @@
 from ast import literal_eval
 from configparser import RawConfigParser
 
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 configfile = "oraview.ini"
 
 defconfig = {

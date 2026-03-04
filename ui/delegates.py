@@ -1,7 +1,11 @@
 from PySide2.QtCore import Qt, QRect
 from PySide2.QtGui import QPainter
 from PySide2.QtWidgets import QStyledItemDelegate
+
 from ..cf.const import constWaitColors
+
+
+"""Created by (c) Gennady Lapin, 2025-2026"""
 
 
 class delegateLoadCell( QStyledItemDelegate ):

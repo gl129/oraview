@@ -9,6 +9,9 @@ from PySide2.QtWidgets import QApplication, QMessageBox
 from .ui.main_window import MainWindow
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 oracledb.init_oracle_client()
 
 

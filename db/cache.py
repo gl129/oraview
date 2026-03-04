@@ -4,6 +4,9 @@ import oracledb
 from ..cf.conf import Config
 
 
+"""Created by (c) Gennady Lapin, 2025-2026"""
+
+
 cache_tables = { "users": "dba_users", "services": "dba_services", "objects": "dba_objects", "sqls": "v$sql" }
 
 
