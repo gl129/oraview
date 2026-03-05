@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import signal
 import traceback
 import oracledb
@@ -7,6 +8,7 @@ from PySide2.QtCore import QTimer
 from PySide2.QtWidgets import QApplication, QMessageBox
 
 from .ui.main_window import MainWindow
+from .ut.debug import debug, audit
 
 
 """Created by (c) Gennady Lapin, 2025-2026"""
@@ -17,8 +19,14 @@ oracledb.init_oracle_client()
 
 def sigIntHandler( signum, frame ):
     """Ctrl-C handler"""
+    signal.signal( signal.SIGINT, sigIntKillNow )
     QApplication.quit()
-    print( "Terminated" )
+    audit( "Terminated" )
+
+
+def sigIntKillNow( signum, frame ):
+    audit( "Killed" )
+    os._exit(1)
 
 
 def exceptionHandler( exc, val, trbk ):
@@ -31,7 +39,7 @@ def exceptionHandler( exc, val, trbk ):
                             + traceback.format_exception(exc,val,trbk)
                             )
             QMessageBox.information( None, "Exception traceback", text )
-            print( text )
+            audit( text )
 
     msgBox = QMessageBox()
     msgBox.setIcon( QMessageBox.Critical )
@@ -45,13 +53,16 @@ def exceptionHandler( exc, val, trbk ):
 
 if __name__ == "__main__":
 
-    if os.fork():
-        """Backgrounding, exit parent process now"""
-        os._exit(0)
+    if debug():
+        audit( "running with debug tracing" )
+    else:
+        os.environ[ "QT_LOGGING_RULES" ] = "*.debug=false;qt.qpa.*=false"
+        if os.fork():
+            """Backgrounding, exit parent process now"""
+            os._exit(0)
 
     """Only child (backgrounded) process here"""
 
-    os.environ[ "QT_LOGGING_RULES" ] = "*.debug=false;qt.qpa.*=false"
     signal.signal( signal.SIGINT, sigIntHandler )
     sys.excepthook = exceptionHandler
 

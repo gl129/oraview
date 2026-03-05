@@ -18,7 +18,7 @@ from ..ui.delegates import delegateLoadCell, delegateLeftElide
 from ..ui.session import winSession
 from ..ui.sql import winSql
 from ..ui.report import winReport
-from ..ut.debug import debug
+from ..ut.debug import audit
 
 
 """Created by (c) Gennady Lapin, 2025-2026"""
@@ -49,7 +49,8 @@ class ashPage( QSplitter ):
             if True:
                 """plot part"""
                 self.plotAsh = ashPlot( self, self.data._sqlite )
-                self.plotAsh.onselect_connect( self.selectedPlot )
+                #self.plotAsh.onselect_connect( self.selectedPlot )
+                self.plotAsh.signalSelectorChanged.connect( self.selectedPlot )
                 self.plotAsh.setMinimumHeight( 220 )
                 lyPlot.addWidget( self.plotAsh )
                 self.scrollAsh = QScrollBar( Qt.Horizontal )
@@ -76,6 +77,9 @@ class ashPage( QSplitter ):
                 self.editPlotSelEnd = QLineEdit()
                 self.editPlotSelEnd.returnPressed.connect( self.selectedPlotEditsChanged )
                 lyPlotControl.addWidget( self.editPlotSelEnd )
+                btnClearPlotSelection = QPushButton( QIcon.fromTheme("edit-clear"), "" )
+                btnClearPlotSelection.clicked.connect( self.btnClearPlotSelectionPressed )
+                lyPlotControl.addWidget( btnClearPlotSelection )
                 lyPlotControl.addItem( QSpacerItem( 1, 1, QSizePolicy.Expanding, QSizePolicy.Preferred ) )
                 self.btnReport = QPushButton( "ASH Report" )
                 self.btnReport.clicked.connect( self.clickedReport )
@@ -117,9 +121,9 @@ class ashPage( QSplitter ):
                     self.editSelectedGroup = QLineEdit()
                     self.editSelectedGroup.returnPressed.connect( self.selectedGroupEditChanged )
                     lyLoads.addWidget( self.editSelectedGroup )
-                    self.btnClearSelectedGroup = QPushButton( QIcon.fromTheme("edit-clear"), "" )
-                    self.btnClearSelectedGroup.clicked.connect( self.btnClearSelectedGroupPressed )
-                    lyLoads.addWidget( self.btnClearSelectedGroup )
+                    btnClearSelectedGroup = QPushButton( QIcon.fromTheme("edit-clear"), "" )
+                    btnClearSelectedGroup.clicked.connect( self.btnClearSelectedGroupPressed )
+                    lyLoads.addWidget( btnClearSelectedGroup )
                     lyGroups.addLayout( lyLoads )
                     #lyGroups.addWidget( wLoads )
                 if True:
@@ -193,9 +197,11 @@ class ashPage( QSplitter ):
 
     def selectedPlot( self, beg, end ):
         if self.plotAsh.selectorVisible():
+            audit( f"visible {beg} {end}" )
             self.editPlotSelBeg.setText( num2date( beg ).isoformat(sep=" ") )
             self.editPlotSelEnd.setText( num2date( end ).isoformat(sep=" ") )
         else:
+            audit( f"unvisible" )
             self.editPlotSelBeg.setText( "" )
             self.editPlotSelEnd.setText( "" )
         self.editPlotSelBeg.setStyleSheet( "" )
@@ -223,7 +229,12 @@ class ashPage( QSplitter ):
             self.plotAsh.setSelector( (beg, end) )
             self.refreshGroupData()
 
+    def btnClearPlotSelectionPressed( self ):
+        self.plotAsh.resetSelector()
+        self.selectedPlot( 0, 0 )
+
     def scrollAshChanged( self, val ):
+        audit( val )
         self.scrollAsh.setEnabled( False )
         try:
             if val == 0:
@@ -234,6 +245,7 @@ class ashPage( QSplitter ):
             self.scrollAsh.setEnabled( True )
 
     def viewportClear( self ):
+        audit()
         self.data = None
         self.cache = None
         #
@@ -250,6 +262,7 @@ class ashPage( QSplitter ):
         self.editSelectedGroup.setText("")
 
     def viewportSetup( self, data, cache ):
+        audit( f"data: {bool(data)}, cache: {bool(cache)}" )
         self.data = data
         self.cache = cache
         #
@@ -265,10 +278,12 @@ class ashPage( QSplitter ):
         self.scrollAsh.setEnabled( True )
 
     def viewportRefresh( self ):
+        audit()
         if not self.btnPause.isChecked() and self.scrollAsh.value() == 0:
             self.dataRefresh()
 
     def dataRefresh( self ):
+        audit()
         self.data.loadDataAsh()
         scrollSeconds = -( self.data.lastSampleTime - self.data.firstSampleTime - timedelta(hours=1) ).total_seconds()
         if scrollSeconds > 0:
@@ -278,6 +293,7 @@ class ashPage( QSplitter ):
 
     def dataReady( self ):
 #        if self.data:
+        audit()
         self.mainWindow.setStatus( "Plotting" )
         #end = self.data.lastSampleTime + timedelta( seconds=self.scrollAsh.value() )
         end = datetime.now() + timedelta( seconds=self.scrollAsh.value() )
@@ -287,6 +303,7 @@ class ashPage( QSplitter ):
             self.refreshGroupData()
 
     def changedGroupBy( self, idx ):
+        audit()
         self.editSelectedGroup.setStyleSheet( "" )
         self.editSelectedGroup.clear()
         if idx >= 0:
@@ -341,6 +358,7 @@ class ashPage( QSplitter ):
                 self.tabGroups.selectionModel().setCurrentIndex( index, QItemSelectionModel.SelectCurrent|QItemSelectionModel.Rows )
 
     def refreshGroupData( self ):
+        audit()
         self.tabGroups.setUpdatesEnabled( False )
         cols, vals = self.groupSelection()
         beg, end = self.plotAsh.getSelector()
@@ -401,6 +419,7 @@ class ashPage( QSplitter ):
                 menu.exec_( QCursor.pos() )
 
     def refreshRawData( self ):
+        audit()
         self.tabRawdata.setUpdatesEnabled( False )
         beg, end = self.plotAsh.getSelector()
         cols, vals = self.groupSelection()

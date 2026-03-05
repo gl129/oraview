@@ -5,10 +5,12 @@ from matplotlib.figure import Figure
 from matplotlib.widgets import SpanSelector
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from PySide2.QtWidgets import QWidget, QVBoxLayout
 from PySide2.QtGui import QColor, QPalette
+from PySide2.QtCore import Signal
+from PySide2.QtWidgets import QWidget, QVBoxLayout
 
 from ..cf.const import constWaitLabels, constWaitColors
+from ..ut.debug import audit
 
 
 """Created by (c) Gennady Lapin, 2025-2026"""
@@ -22,16 +24,16 @@ def qcolor2mpl( qcolor ):
 
 class visualPlot( QWidget ):
 
+    signalSelectorChanged = Signal( datetime, datetime )
+
     def __init__( self, parent ):
         super().__init__( parent )
-        self.onSelectHandler = None
-
+        #
         self.bgColor = qcolor2mpl( self.palette().color(QPalette.ColorRole.Window) )
         self.textColor = qcolor2mpl( self.palette().color(QPalette.ColorRole.WindowText) )
         self.buttonColor = qcolor2mpl( self.palette().color(QPalette.ColorRole.Button) )
-        #self.plotColors = [ qcolor2mpl( constWaitColors[l]) for l in constWaitLabels ]
         self.plotColors = [ qcolor2mpl(c) for c in constWaitColors ]
-
+        #
         self._figure = Figure( constrained_layout=True )
         self._canvas = FigureCanvas( self._figure )
         layout = QVBoxLayout()
@@ -41,13 +43,9 @@ class visualPlot( QWidget ):
         self.selector = SpanSelector( self.ax, self._onselect, 'horizontal', props=dict(facecolor=self.textColor,alpha=0.3), useblit=True, interactive=True ) #, snap_values=self.ax.get_xlim() )
         self.plotEmpty()
 
-    def onselect_connect( self, handler ):
-        self.onSelectHandler = handler
-
-    def _onselect( self, xmin, xmax):
-        if self.onSelectHandler:
-            sel = self.getSelector()
-            self.onSelectHandler( *sel )
+    def _onselect( self, xmin, xmax ):
+        sel = self.getSelector()
+        self.signalSelectorChanged.emit( *sel )
 
     def selectorVisible( self ):
         return self.selector.visible
@@ -65,6 +63,7 @@ class visualPlot( QWidget ):
     def resetSelector( self ):
         self.selector.set_visible( False )
         self._canvas.draw_idle()
+        #self.signalSelectorChanged.emit( None, None )
 
     def setSelector( self, sel ):
         self.selector.extents = sel
@@ -79,6 +78,7 @@ class visualPlot( QWidget ):
         self._canvas.draw()
 
     def plotData( self, data ):
+        audit()
         self.ax.clear()
         self.ax.stackplot( data.index, data.T, labels=data.columns, colors=self.plotColors )
         self.plotDecor( )

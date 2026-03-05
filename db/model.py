@@ -118,7 +118,9 @@ class dataModel( tableModel ):
 
     def __init__( self, parent ):
         super().__init__( parent )
-        self.setConn()
+        self._conn = None
+        self._cache = None
+        self._query = None
 
     def setConn( self, conn=None, cache=None ):
         self._conn = conn
@@ -147,7 +149,8 @@ class timedModel( dataModel ):
 
     def __init__( self, parent ):
         super().__init__( parent )
-        self.setConn()
+        self._select = None
+        self._order = None
 
     def setConn( self, conn=None, cache=None, query=None, order=None ):
         super().setConn( conn, cache )

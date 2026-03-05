@@ -13,6 +13,7 @@ from ..ui.connect import connectDialog
 from ..ui.connlist import connlistTreeWidget
 from ..ui.page_ash import ashPage
 from ..ut.icon import updateWinIcon
+from ..ut.debug import audit
 
 
 """Created by (c) Gennady Lapin, 2025-2026"""
@@ -42,10 +43,15 @@ class MainWindow( QMainWindow ):
 
         toolTop = QToolBar( "Main toolbar" )
 
-        actConnect = QAction( "Connect", self )
+        actConnect = QAction( "Connection", self )
         actConnect.setStatusTip( "Open new connection dialog" )
         actConnect.triggered.connect( self.clickedConnect )
         toolTop.addAction( actConnect )
+
+        actSettings = QAction( "Settings", self )
+        actSettings.setStatusTip( "Global settings and preferences" )
+        #actSettings.triggered.connect( self.clickedSettings )
+        toolTop.addAction( actSettings )
 
         spacer = QWidget()
         spacer.setSizePolicy( QSizePolicy.Expanding, QSizePolicy.Preferred )
@@ -120,6 +126,7 @@ class MainWindow( QMainWindow ):
 
 
     def disconnectAll( self ):
+        audit()
         self.stopAutoRefresh( )
         self.currentConfig = dict( src=None, name=None, params={} )
         self.cache.close( )
@@ -130,6 +137,7 @@ class MainWindow( QMainWindow ):
 
 
     def connectTo( self, config ):
+        audit( config )
         self.disconnectAll( )
         self.currentConfig = config
         try:
@@ -144,6 +152,7 @@ class MainWindow( QMainWindow ):
 
 
     def viewportClear( self ):
+        audit()
         for i in range( self.centralWidget().count() ):
             self.centralWidget().widget( i ).viewportClear( )
         self.setStatus( "Ready" )
@@ -151,6 +160,7 @@ class MainWindow( QMainWindow ):
 
 
     def viewportSetup( self ):
+        audit()
         self.interval = int( getConfig( "MainWindow", "refreshInterval" ) )
         self.timer.setInterval( self.interval * 1000 )
         for i in range( self.centralWidget().count() ):
@@ -167,6 +177,7 @@ class MainWindow( QMainWindow ):
 
 
     def viewportRefresh( self ):
+        audit()
         self.centralWidget().currentWidget().viewportRefresh()
         self.setStatus( "Ready" )
         updateWinIcon( self )
