@@ -1,4 +1,4 @@
-![oraview_shot](https://github.com/user-attachments/assets/ebbe05cd-e1c3-4801-b205-d7dbe4bacb58)
+![oraview_shot](doc/img/oraview2.png)
 
 <H1>OraView</H1>
 
